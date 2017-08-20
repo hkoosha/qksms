@@ -33,6 +33,7 @@ import com.moez.QKSMS.ui.base.QKActivity;
 import com.moez.QKSMS.ui.view.QKTextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class QKDialog extends DialogFragment {
     private final String TAG = "QKDialog";
@@ -268,6 +269,29 @@ public class QKDialog extends DialogFragment {
                 if (onClickListener != null) {
                     onClickListener.onItemClick(parent, view, position, id);
                     dismiss();
+                }
+            }
+        });
+        return setCustomView(listView);
+    }
+
+    public QKDialog setItems(boolean dismiss, List<String> items, final OnItemClickListener onClickListener) {
+
+        mAdapter = new ArrayAdapter<>(mContext, R.layout.list_item_simple, items);
+        ListView listView = new ListView(mContext);
+        listView.setAdapter(mAdapter);
+        listView.setDivider(null);
+        listView.setPadding(0, Units.dpToPx(mContext, 8), 0, Units.dpToPx(mContext, 8));
+        listView.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent,
+                                    View view,
+                                    int position,
+                                    long id) {
+                if (onClickListener != null) {
+                    onClickListener.onItemClick(parent, view, position, id);
+                    if (dismiss)
+                        dismiss();
                 }
             }
         });
