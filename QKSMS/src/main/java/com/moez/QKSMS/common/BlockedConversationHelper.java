@@ -336,7 +336,7 @@ public class BlockedConversationHelper {
     private static String getBlockedWordOf(SharedPreferences prefs, final String value) {
 
         for (final String each : getBlockedWords(prefs))
-            if (value.contains(each))
+            if (value.contains(" " + each + " "))
                 return each;
 
         return null;
