@@ -13,6 +13,7 @@ import com.moez.QKSMS.common.utils.PhoneNumberUtils;
 import com.moez.QKSMS.data.Contact;
 import com.moez.QKSMS.data.Conversation;
 import com.moez.QKSMS.data.Message;
+import com.moez.QKSMS.mmssms.StripAccents;
 import com.moez.QKSMS.transaction.SmsHelper;
 import com.moez.QKSMS.ui.messagelist.MessageColumns;
 import com.moez.QKSMS.ui.settings.SettingsFragment;
@@ -259,6 +260,21 @@ public class BlockedConversationHelper {
         return false;
     }
 
+    private static boolean modifyCollection(SharedPreferences prefs,
+                                            String value,
+                                            String key,
+                                            boolean isAdd) {
+
+        value = value.toLowerCase().trim();
+        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
+        final boolean modified = isAdd ? values.add(value) : values.remove(value);
+
+        if(modified)
+            prefs.edit().putStringSet(key, values).apply();
+
+        return modified;
+    }
+
     // ------------------- BLOCK BY WORD BLACKLIST
 
     /**
@@ -268,20 +284,11 @@ public class BlockedConversationHelper {
      * @return true if the value did not exist in the collection before, and hence the collection was modified.
      * @see #getBlockedWords(SharedPreferences)
      */
-    public static boolean blockWord(SharedPreferences prefs, String value) {
+    public static boolean blockWord(SharedPreferences prefs, String value, boolean extreme) {
 
-        String value1 = value;
-
-        value1 = value1.toLowerCase().trim();
-
-        value = value1;
-
-        final String key = SettingsFragment.BLOCKED_WORD;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.add(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                extreme ? SettingsFragment.BLOCKED_WORD_EXTREME : SettingsFragment.BLOCKED_WORD,
+                true);
     }
 
     /**
@@ -292,20 +299,11 @@ public class BlockedConversationHelper {
      * @return true if the value actually existed in the collection, and hence the collection was modified.
      * @see #getBlockedWords(SharedPreferences)
      */
-    public static boolean unblockWord(SharedPreferences prefs, String value) {
+    public static boolean unblockWord(SharedPreferences prefs, String value, boolean extreme) {
 
-        String value1 = value;
-
-        value1 = value1.toLowerCase().trim();
-
-        value = value1;
-
-        final String key = SettingsFragment.BLOCKED_WORD;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.remove(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                extreme ? SettingsFragment.BLOCKED_WORD_EXTREME : SettingsFragment.BLOCKED_WORD,
+                false);
     }
 
     /**
@@ -315,9 +313,11 @@ public class BlockedConversationHelper {
      * @param prefs app shared pref.
      * @return collection of all the words considered to be spam if seen in a message.
      */
-    public static Collection<String> getBlockedWords(SharedPreferences prefs) {
+    public static Collection<String> getBlockedWords(SharedPreferences prefs, boolean extreme) {
 
-        final String key = SettingsFragment.BLOCKED_WORD;
+        final String key = extreme ? SettingsFragment.BLOCKED_WORD_EXTREME
+                : SettingsFragment.BLOCKED_WORD;
+
         return prefs.getStringSet(key, Collections.emptySet());
     }
 
@@ -332,12 +332,15 @@ public class BlockedConversationHelper {
     private static String getBlockedWordOf(SharedPreferences prefs, String value) {
 
         value = preProcessFa(value.replaceAll("\\s", " "));
-        final List<String> split = Arrays.asList(value.split(" "));
 
         // NO regex used, utf support for \w, \s, and \b character classes is very clunky.
-
-        for (final String each : getBlockedWords(prefs))
+        final List<String> split = Arrays.asList(value.split(" "));
+        for (final String each : getBlockedWords(prefs, false))
             if (split.contains(each))
+                return each;
+
+        for (final String each : getBlockedWords(prefs, true))
+            if (value.contains(each))
                 return each;
 
         return null;
@@ -362,7 +365,6 @@ public class BlockedConversationHelper {
         for (int i = 0; i < from.length; i++)
             value = value.replace(from[i], to[i]);
 
-
         return value;
     }
 
@@ -380,12 +382,9 @@ public class BlockedConversationHelper {
         if(compilePattern(value) == null)
             return false;
 
-        final String key = SettingsFragment.BLOCKED_PATTERN;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.add(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                SettingsFragment.BLOCKED_PATTERN,
+                true);
     }
 
     /**
@@ -398,12 +397,9 @@ public class BlockedConversationHelper {
      */
     public static boolean unblockPattern(SharedPreferences prefs, final String value) {
 
-        final String key = SettingsFragment.BLOCKED_PATTERN;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.remove(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                SettingsFragment.BLOCKED_PATTERN,
+                false);
     }
 
     /**
@@ -466,22 +462,16 @@ public class BlockedConversationHelper {
 
     public static boolean blockNumberPrefix(SharedPreferences prefs, final String value) {
 
-        final String key = SettingsFragment.BLOCKED_NUMBER_PREFIX;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.add(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                SettingsFragment.BLOCKED_NUMBER_PREFIX,
+                true);
     }
 
     public static boolean unblockNumberPrefix(SharedPreferences prefs, final String value) {
 
-        final String key = SettingsFragment.BLOCKED_NUMBER_PREFIX;
-        final Set<String> values = prefs.getStringSet(key, new HashSet<String>(0));
-        final boolean modified = values.remove(value);
-        prefs.edit().putStringSet(key, values).apply();
-
-        return modified;
+        return modifyCollection(prefs, value,
+                SettingsFragment.BLOCKED_NUMBER_PREFIX,
+                false);
     }
 
     /**
