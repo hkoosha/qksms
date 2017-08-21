@@ -354,6 +354,29 @@ public class BlockedConversationHelper {
         if(!CASE_SENSITIVE_WORD)
             value = value.toLowerCase();
 
+        return preProcessFa(value);
+    }
+
+    /**
+     * PreProcess for persian language.
+     */
+    private static String preProcessFa(String value) {
+
+        final String[] from = {
+                "ي", "ك", "‍", "دِ", "بِ", "زِ", "ذِ", "ِشِ", "ِسِ", "‌", "ى",
+                "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "٠", // arabic numbers
+                "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰", // persian numbers
+        };
+        final String[] to = {
+                "ی", "ک", "", "د", "ب", "ز", "ذ", "ش", "س", "", "ی",
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+        };
+
+        for (int i = 0; i < from.length; i++)
+            value = value.replace(from[i], to[i]);
+
+
         return value;
     }
 
